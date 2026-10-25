@@ -6,12 +6,16 @@ try { lang = localStorage.getItem('portfolio-language') === 'en' ? 'en' : 'ar'; 
 const dialog = $('#project-dialog');
 const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
 let paused = false, observer, lastFocus, activeProject = null, scrollFrame = 0, wirdSection = 'mushaf';
+let videoObserver, videoInView = false, videoWanted = false;
 const tr = (ar, en) => lang === 'ar' ? ar : en;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const img = (name, alt, cls = '', eager = false) => `<img class="${cls}" src="assets/images/${name}.webp" alt="${esc(alt)}" loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
 function duo(screen = 'wird-reading', eager = false) { return `<div class="duo">${img('duo-frame','', 'duo-frame',eager)}${img(screen,tr('وِرد على شاشة iPhone Duo','Wird on iPhone Duo'),'duo-screen',eager)}</div>`; }
 function phone(screen) { return `<div class="phone"><div class="phone-screen">${screen}</div>${img('iphone-frame','','phone-chrome')}<span class="island" aria-hidden="true"></span></div>`; }
-function iphone18(screen, alt) { return `<div class="iphone18">${img('iphone-18-pro-frame','','iphone18-chrome')}${img(screen,alt,'iphone18-screen')}</div>`; }
+function iphone18(screen, alt, clip = '') {
+ const media=clip?`<video class="iphone18-screen" data-showcase-video muted loop playsinline preload="metadata" poster="assets/images/${screen}.webp" aria-label="${esc(alt)}"><source src="assets/videos/${clip}.mp4" type="video/mp4"></video>`:img(screen,alt,'iphone18-screen');
+ return `<div class="iphone18">${img('iphone-18-pro-frame','','iphone18-chrome')}${media}</div>`;
+}
 function wirdSections() {
   return [
     {id:'mushaf', label:tr('المصحف','Mushaf'), device:'iPhone Duo', title:tr('اقرأ. افهم. راجع.','Read. Understand. Review.'), detail:tr('مصاحف متعددة، وتفسير وتلاوة ومراجعة حفظك.','Mushaf editions, tafsir, recitation and memorization practice.'), points:[tr('تفسير وترجمة عند الآية','Tafsir and translation at the ayah'),tr('مراجعة من الموضع الذي تختاره','Review from your chosen place'),tr('مشاركة الآيات بصورة أو فيديو','Share ayahs as an image or video')]},
@@ -55,6 +59,7 @@ function observe(){observer?.disconnect();if(!('IntersectionObserver' in window)
 function features(p){return `<section class="feature-area"><h2>${content[lang].featuresTitle}</h2><div class="features">${p.features.map((f,i)=>`<article class="feature"><span class="feature-number">0${i+1}</span><div><h3>${f.title}</h3><p>${f.body}</p></div></article>`).join('')}</div></section>`;}
 function openProject(id, section = 'mushaf'){
  const t=content[lang],p=t.projects.find(p=>p.id===id);if(!p)return;
+ stopShowcaseVideo();
  if(!dialog.open)lastFocus=document.activeElement;
  activeProject=id;if(id==='wird')wirdSection=wirdSections().some(s=>s.id===section)?section:'mushaf';$('#dialog-name').textContent=p.name;
  const visual=id==='wird'?screenTour():id==='creative'?`<div class="case-creative-media">${img('creative-home',tr('مساحة العمل الأصلية في التطبيق','Original app workspace'),'creative-home')}${phone(img('creative-studio',tr('استوديو الموكاب داخل التطبيق','Device mockup studio in the app')))}</div>`:wakeDemo();
@@ -65,21 +70,34 @@ function openProject(id, section = 'mushaf'){
 }
 function sectionPanel(id){
  const s=wirdSections().find(s=>s.id===id)||wirdSections()[0];
- const device=s.id==='mushaf'?duo('wird-reading',true):iphone18('wird-'+s.id,tr(s.id==='tasbih'?'المسبحة في وِرد على آيفون 18 برو':'الصلاة في وِرد على آيفون 18 برو',s.id==='tasbih'?'Wird Tasbih on iPhone 18 Pro':'Wird Prayer on iPhone 18 Pro'));
- return `<div class="wird-section-layout ${s.id==='mushaf'?'mushaf-layout':'portrait-layout'}"><figure class="wird-device">${device}<figcaption dir="ltr">${s.device}</figcaption></figure><div class="wird-section-copy"><span class="project-kicker">${s.label}</span><h2>${s.title}</h2><p>${s.detail}</p><ul>${s.points.map(x=>`<li>${x}</li>`).join('')}</ul></div></div>`;
+ const isVideo=s.id!=='mushaf';
+ const device=isVideo?iphone18('wird-'+s.id+'-video',tr(s.id==='tasbih'?'فيديو المسبحة في وِرد على آيفون 18 برو':'فيديو الصلاة في وِرد على آيفون 18 برو',s.id==='tasbih'?'Wird Tasbih video on iPhone 18 Pro':'Wird Prayer video on iPhone 18 Pro'),'wird-'+s.id):duo('wird-reading',true);
+ return `<div class="wird-section-layout ${s.id==='mushaf'?'mushaf-layout':'portrait-layout'}"><figure class="wird-device">${device}<figcaption><span dir="ltr">${s.device}</span>${isVideo?`<div class="video-controls"><button type="button" data-video-toggle>${tr('تشغيل الفيديو','Play video')}</button>${s.id==='tasbih'?`<button type="button" data-video-sound aria-pressed="false">${tr('تشغيل الصوت','Sound on')}</button>`:''}</div>`:''}</figcaption></figure><div class="wird-section-copy"><span class="project-kicker">${s.label}</span><h2>${s.title}</h2><p>${s.detail}</p><ul>${s.points.map(x=>`<li>${x}</li>`).join('')}</ul></div></div>`;
 }
 function screenTour(){return `<section class="wird-showcase" aria-label="${tr('أقسام وِرد','Wird sections')}"><div class="wird-tabs tabs" role="tablist" aria-label="${tr('أقسام وِرد','Wird sections')}">${wirdSections().map(s=>`<button role="tab" id="tab-${s.id}" aria-controls="tour-panel" data-screen="${s.id}" aria-selected="${s.id===wirdSection}" tabindex="${s.id===wirdSection?0:-1}">${s.label}</button>`).join('')}</div><div class="wird-section-panel" data-section="${wirdSection}" id="tour-panel" role="tabpanel" aria-labelledby="tab-${wirdSection}" tabindex="0">${sectionPanel(wirdSection)}</div></section>`;}
 function selectWirdSection(id){
  if(!wirdSections().some(s=>s.id===id))id='mushaf';
  wirdSection=id;
  const panel=$('#tour-panel');if(!panel)return;
+ stopShowcaseVideo();
  dialog.querySelectorAll('[data-screen]').forEach(b=>{const selected=b.dataset.screen===id;b.setAttribute('aria-selected',String(selected));b.tabIndex=selected?0:-1;});
- panel.setAttribute('aria-labelledby','tab-'+id);panel.dataset.section=id;panel.innerHTML=sectionPanel(id);panel.classList.remove('changing');requestAnimationFrame(()=>panel.classList.add('changing'));
+ panel.setAttribute('aria-labelledby','tab-'+id);panel.dataset.section=id;panel.innerHTML=sectionPanel(id);panel.classList.remove('changing');requestAnimationFrame(()=>panel.classList.add('changing'));bindShowcaseVideo();
 }
-function bindTour(){const tabs=[...dialog.querySelectorAll('[data-screen]')];const select=b=>{if(wirdSection===b.dataset.screen)return;location.hash='project-wird/'+b.dataset.screen;};tabs.forEach((b,i)=>{b.addEventListener('click',()=>select(b));b.addEventListener('keydown',e=>{let n;if(e.key==='ArrowRight')n=(i+(lang==='ar'?-1:1)+tabs.length)%tabs.length;else if(e.key==='ArrowLeft')n=(i+(lang==='ar'?1:-1)+tabs.length)%tabs.length;else if(e.key==='Home')n=0;else if(e.key==='End')n=tabs.length-1;else return;e.preventDefault();tabs[n].focus();select(tabs[n]);});});}
+function bindTour(){const tabs=[...dialog.querySelectorAll('[data-screen]')];const select=b=>{if(wirdSection===b.dataset.screen)return;location.hash='project-wird/'+b.dataset.screen;};tabs.forEach((b,i)=>{b.addEventListener('click',()=>select(b));b.addEventListener('keydown',e=>{let n;if(e.key==='ArrowRight')n=(i+(lang==='ar'?-1:1)+tabs.length)%tabs.length;else if(e.key==='ArrowLeft')n=(i+(lang==='ar'?1:-1)+tabs.length)%tabs.length;else if(e.key==='Home')n=0;else if(e.key==='End')n=tabs.length-1;else return;e.preventDefault();tabs[n].focus();select(tabs[n]);});});bindShowcaseVideo();}
+function syncShowcaseVideo(){const video=$('[data-showcase-video]',dialog);if(!video)return;if(dialog.open&&videoInView&&videoWanted&&!document.hidden)video.play().catch(()=>{});else video.pause();}
+function stopShowcaseVideo(){videoObserver?.disconnect();videoInView=false;videoWanted=false;$('[data-showcase-video]',dialog)?.pause();}
+function bindShowcaseVideo(){
+ const video=$('[data-showcase-video]',dialog),button=$('[data-video-toggle]',dialog),sound=$('[data-video-sound]',dialog);if(!video)return;
+ video.muted=true;videoWanted=!paused&&!motionQuery.matches;
+ const update=()=>{button.textContent=video.paused?tr('تشغيل الفيديو','Play video'):tr('إيقاف الفيديو','Pause video');};
+ video.addEventListener('play',update);video.addEventListener('pause',update);
+ button.addEventListener('click',()=>{videoWanted=video.paused;syncShowcaseVideo();});
+ sound?.addEventListener('click',()=>{video.muted=!video.muted;sound.ariaPressed=String(!video.muted);sound.textContent=video.muted?tr('تشغيل الصوت','Sound on'):tr('كتم الصوت','Mute');if(!video.muted){videoWanted=true;syncShowcaseVideo();}});
+ if('IntersectionObserver' in window){videoObserver=new IntersectionObserver(entries=>{videoInView=entries[0].isIntersecting;syncShowcaseVideo();},{threshold:.1});videoObserver.observe(video);}else{videoInView=true;syncShowcaseVideo();}
+}
 function wakeDemo(){return `<section class="demo-area"><div class="demo-controls"><h2>${tr('جرّب الفكرة.','Try the idea.')}</h2><p>${tr('سمّ المجموعة. غيّر النغمة. أوقفها كلها بمفتاح واحد.','Name the group. Pick a sound. Switch them all off together.')}</p><label for="group-input">${tr('اسم المجموعة','Group name')}</label><input id="group-input" value="${tr('الدوام','Workday')}" maxlength="24" autocomplete="off"><label for="sound-select">${tr('نغمة منبّه 6:30','Sound for the 6:30 alarm')}</label><select id="sound-select"><option value="breeze">${tr('نسيم','Breeze')}</option><option value="piano">${tr('بيانو','Piano')}</option><option value="sunrise">${tr('شروق','Sunrise')}</option></select><p class="demo-caption">${tr('عرض تفاعلي للفكرة؛ لا يضبط منبّهًا على جهازك.','An interactive concept; it does not set an alarm on your device.')}</p><div class="demo-feedback" aria-live="polite"></div></div>${phone(wakeScreen(true))}</section>`;}
 function bindDemo(){const ui=$('.demo-area .wake-ui');$('#group-input').addEventListener('input',e=>$('.group-name',ui).textContent=e.target.value.trim()||tr('مجموعتي','My group'));$('#sound-select').addEventListener('change',e=>{const label=e.target.selectedOptions[0].textContent;$('[data-row="0"]',ui).textContent=' · '+label;$('.demo-feedback').textContent=tr('نغمة 6:30: ','6:30 sound: ')+label;});dialog.querySelectorAll('[data-alarm]').forEach(b=>b.addEventListener('click',()=>{const enabled=b.ariaChecked!=='true';b.ariaChecked=String(enabled);if(b.dataset.alarm==='group'){dialog.querySelectorAll('[data-alarm]').forEach(s=>s.ariaChecked=String(enabled));ui.classList.toggle('off',!enabled);$('.demo-feedback').textContent=enabled?tr('كل المنبّهات مفعّلة','All alarms enabled'):tr('كل المنبّهات متوقفة','All alarms paused');}else{const any=[...dialog.querySelectorAll('[data-alarm]:not([data-alarm="group"])')].some(x=>x.ariaChecked==='true');$('[data-alarm="group"]').ariaChecked=String(any);ui.classList.toggle('off',!any);}}));}
-function closeProject(){const wasOpen=dialog.open;if(wasOpen)dialog.close();activeProject=null;document.body.style.overflow='';if(wasOpen){lastFocus?.focus({preventScroll:true});lastFocus=null;}}
+function closeProject(){stopShowcaseVideo();const wasOpen=dialog.open;if(wasOpen)dialog.close();activeProject=null;document.body.style.overflow='';if(wasOpen){lastFocus?.focus({preventScroll:true});lastFocus=null;}}
 function route(){const [id,section='mushaf']=location.hash.replace('#project-','').split('/');if(location.hash.startsWith('#project-')&&content[lang].projects.some(p=>p.id===id)){if(id==='wird'&&activeProject==='wird'&&dialog.open)selectWirdSection(section);else openProject(id,section);}else closeProject();}
 $('#close-dialog').addEventListener('click',()=>{history.replaceState(null,'',location.pathname+location.search+'#work');closeProject();});
 dialog.addEventListener('cancel',e=>{e.preventDefault();$('#close-dialog').click();});
@@ -88,5 +106,6 @@ $('#language').addEventListener('click',()=>{lang=lang==='ar'?'en':'ar';try{loca
 window.addEventListener('hashchange',route);
 document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#project-"]');if(a&&location.hash===a.getAttribute('href')){e.preventDefault();route();}});
 window.addEventListener('scroll',()=>{if(scrollFrame||paused||motionQuery.matches||dialog.open)return;scrollFrame=requestAnimationFrame(()=>{const device=$('.fold-device');if(device&&window.scrollY<1000){const p=Math.min(window.scrollY/800,1);device.style.transform=`translateY(${p*12}px) rotateX(${p*5}deg)`;}scrollFrame=0;});},{passive:true});
-motionQuery.addEventListener('change',()=>{if(motionQuery.matches&&$('.fold-device'))$('.fold-device').style.transform='none';});
+document.addEventListener('visibilitychange',syncShowcaseVideo);
+motionQuery.addEventListener('change',()=>{if(motionQuery.matches){if($('.fold-device'))$('.fold-device').style.transform='none';videoWanted=false;syncShowcaseVideo();}});
 render();route();

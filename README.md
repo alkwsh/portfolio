@@ -14,7 +14,7 @@ Publish the `main` branch from `/` using GitHub Pages. All paths are relative, s
 
 - Text lives in `content.js`; both languages use the same structure.
 - Wird screens come from the owner's verified Duo exports. Hardware is the existing original device artwork. Screen text is not generated.
-- Wird is presented in three sections: Mushaf on Duo, Tasbih and Prayer on the original Apple iPhone 18 Pro frame. Tasbih and Prayer use original screenshots preserved in the owner’s October 24 Figma backup; their exact build identity is not asserted.
+- Wird is presented in three sections: Mushaf on Duo, Tasbih and Prayer on the original Apple iPhone 18 Pro frame. Tasbih and Prayer use the owner's October 25 recordings, encoded as 60 fps H.264 MP4s. Prayer uses the revised `Untitled.mov`; Tasbih preserves the recording's AAC audio with a sound toggle. Poster images come from the same recordings.
 - Creative screens and WakeBear artwork come from the owner's projects. WakeBear uses a labelled interactive web demonstration, not a claimed app screenshot.
 - Bank logos are original SVGs from [Boubyan's branding kit](https://www.bankboubyan.com/en/bank-boubyan-branding-kit) and [Warba's website](https://www.warbabank.com/). They indicate employment history, not endorsement.
 - TheSansArabic Plain, Bold and ExtraBold are the owner's supplied local font files.
@@ -22,4 +22,4 @@ Publish the `main` branch from `/` using GitHub Pages. All paths are relative, s
 
 ## Motion and accessibility
 
-Device opening, short entrances and native-dialog project transitions. Reduced-motion preferences and a manual motion control are supported. Dialogs support Escape and focus restoration. Screen tabs support arrow keys, Home and End. The alarm demonstration has labelled switches and live feedback. No alarm is scheduled or audio played.
+Device opening, short entrances and native-dialog project transitions. Reduced-motion preferences and a manual motion control are supported. Showcase videos loop silently while visible, with play/pause controls; reduced motion starts them paused. Tasbih audio starts only after the visitor enables sound. Leaving a section, closing its dialog, or hiding the page pauses playback. Dialogs support Escape and focus restoration. Screen tabs support arrow keys, Home and End. The alarm demonstration has labelled switches and live feedback; no alarm is scheduled.
