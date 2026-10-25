@@ -14,3 +14,4 @@ html[dir=ltr] .hero h1{font-size:clamp(58px,6.9vw,96px);letter-spacing:-5px;line
 .fold-device{direction:ltr}.phone-chrome{z-index:1}.phone-screen{z-index:2}.island{z-index:3}.case-wakebear .feature-area,.case-creative .feature-area{padding-top:45px}
 
 .demo-area button.toggle:after{content:"";position:absolute;left:50%;top:50%;width:56px;height:56px;transform:translate(-50%,-50%)}
+.hero-stage,.hero-stage:before{pointer-events:none}
