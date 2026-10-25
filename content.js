@@ -32,7 +32,7 @@ window.PORTFOLIO_CONTENT = {
         "name": "وِرد",
         "category": "تطبيق iOS",
         "tagline": "خطوات أقل. صلة أقرب.",
-        "summary": "قراءة القرآن وفهمه والاستماع إليه ومراجعة حفظه، في مكان واحد.",
+        "summary": "المصحف والمسبحة والصلاة، في مكان واحد.",
         "why": "صنعنا وِرد لتقليل الخطوات بين قراءة الآية وفهمها والاستماع إليها ومراجعة حفظها، مع أدوات للصلاة والأذكار ومتابعة التقدّم.",
         "features": [
           {
@@ -140,7 +140,7 @@ window.PORTFOLIO_CONTENT = {
         "name": "Wird",
         "category": "iOS app",
         "tagline": "Fewer steps. A closer connection.",
-        "summary": "Read, understand, listen, and review your Quran memorization in one place.",
+        "summary": "Mushaf, tasbih and prayer, in one place.",
         "why": "We made Wird to bring reading, understanding, listening, and memorization closer together, with tools for prayer, adhkar, and tracking progress.",
         "features": [
           {
