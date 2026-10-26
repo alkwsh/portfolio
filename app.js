@@ -42,7 +42,8 @@ function wirdSections() {
   ];
 }
 function wirdSectionLinks(){return `<div class="wird-section-links" aria-label="${tr('أقسام وِرد','Wird sections')}">${wirdSections().map(s=>`<a href="#project-wird/${s.id}">${s.label}</a>`).join('')}</div>`;}
-function appTitle(p,tag='h3'){return `<div class="app-title app-title-${p.id}">${img(p.id+'-app-icon','','app-badge')}<${tag}${tag==='h1'?' id="project-title"':''}>${esc(p.name)}</${tag}></div>`;}
+function appBadge(id,cls='app-badge'){return img(id==='wird'?'wird-app-icon-black':id+'-app-icon','',cls);}
+function appTitle(p,tag='h3'){return `<div class="app-title app-title-${p.id}">${appBadge(p.id)}<${tag}${tag==='h1'?' id="project-title"':''}>${esc(p.name)}</${tag}></div>`;}
 function projectLink(p){return `<a href="#project-${p.id}" class="text-link" aria-label="${content[lang].openProject}: ${p.name}">${content[lang].openProject}${icon('forward')}</a>`;}
 function render() {
   stopHeroVideo();
@@ -61,7 +62,7 @@ function render() {
     <section class="hero" id="top" aria-labelledby="hero-title">
     <h1 id="hero-title"><span>${t.heroLine1}</span><span class="soft">${t.heroLine2}</span></h1><p class="hero-intro">${t.heroIntro}</p><a class="hero-cta" href="#project-wird">${tr('اكتشف وِرد','Explore Wird')}<span class="cta-icon">${icon('forward')}</span></a>
     <div class="hero-stage">${duoShowcase('wird-mushaf-light',true)}</div>
-    <div class="hero-label"><span><span class="hero-app-name">${img(w.id+'-app-icon','','hero-app-badge')}<strong>${w.name}</strong></span> &nbsp; / &nbsp; ${tr('القرآن، بمساحة أوسع.','More room for the Quran.')}</span><button class="motion-control" id="motion-control" aria-pressed="${paused}">${icon(paused?'play':'pause')}${paused?tr('تشغيل الحركة','Enable motion'):tr('إيقاف الحركة','Pause motion')}</button><span dir="ltr">iPhone Duo</span></div></section>
+    <div class="hero-label"><span><span class="hero-app-name">${appBadge(w.id,'hero-app-badge')}<strong>${w.name}</strong></span> &nbsp; / &nbsp; ${tr('القرآن، بمساحة أوسع.','More room for the Quran.')}</span><button class="motion-control" id="motion-control" aria-pressed="${paused}">${icon(paused?'play':'pause')}${paused?tr('تشغيل الحركة','Enable motion'):tr('إيقاف الحركة','Pause motion')}</button><span dir="ltr">iPhone Duo</span></div></section>
     <section class="section" id="work" aria-labelledby="work-title"><div class="section-heading reveal"><h2 id="work-title">${t.selectedWork}</h2><span class="index">01 — 03</span></div>
     <article class="project-wird reveal"><div class="project-info"><span class="project-kicker">01 / ${w.category}</span>${appTitle(w)}<p>${w.tagline}</p>${wirdSectionLinks()}${projectLink(w)}</div><div class="wird-card-art">${duo('wird-home')}</div></article>
     <div class="project-grid"><article class="project-card wake-card reveal"><div class="project-info"><span class="project-kicker">02 / ${b.category}</span>${appTitle(b)}<p>${b.tagline}</p>${projectLink(b)}</div><div class="card-art">${iphone18('wakebear-home',tr('مجموعات المنبهات في WakeBear','Alarm groups in WakeBear'))}</div></article>
@@ -76,7 +77,7 @@ function openProject(id, section = 'mushaf'){
  const t=content[lang],p=t.projects.find(p=>p.id===id);if(!p)return;
  stopShowcaseVideo();
  if(!dialog.open)lastFocus=document.activeElement;
- activeProject=id;if(id==='wird')wirdSection=wirdSections().some(s=>s.id===section)?section:'mushaf';$('#dialog-name').innerHTML=img(p.id+'-app-icon','','dialog-app-badge')+`<span>${esc(p.name)}</span>`;
+ activeProject=id;if(id==='wird')wirdSection=wirdSections().some(s=>s.id===section)?section:'mushaf';$('#dialog-name').innerHTML=appBadge(p.id,'dialog-app-badge')+`<span>${esc(p.name)}</span>`;
  const visual=id==='wird'?screenTour():id==='creative'?`<div class="case-creative-media">${img('creative-home',tr('مساحة العمل الأصلية في التطبيق','Original app workspace'),'creative-home')}${phone(img('creative-studio',tr('استوديو الموكاب داخل التطبيق','Device mockup studio in the app')))}</div>`:wakeShowcase();
  const whyTitle=id==='wird'?tr('لماذا صنعنا وِرد؟','Why we made Wird'):t.whyTitle;
  $('#project-content').innerHTML=`<article class="case case-${id}"><header class="case-header"><div class="eyebrow">${p.category} · UX/UI</div>${appTitle(p,'h1')}<p class="tagline">${p.tagline}</p><p class="summary">${p.summary}</p></header>${visual}${id==='wird'?`<section class="why"><h2>${whyTitle}</h2><p>${p.why}</p></section>`:''}${id==='wird'?'':features(p)}<div class="next-project"><a href="#project-${id==='wird'?'wakebear':id==='wakebear'?'creative':'wird'}">${tr('المشروع التالي','Next project')}${icon('forward')}</a></div></article>`;
