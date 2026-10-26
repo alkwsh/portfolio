@@ -5,14 +5,15 @@ let lang = 'ar';
 try { lang = localStorage.getItem('portfolio-language') === 'en' ? 'en' : 'ar'; } catch {}
 const dialog = $('#project-dialog');
 const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
-let paused = false, observer, lastFocus, activeProject = null, scrollFrame = 0, wirdSection = 'mushaf';
+let paused = false, observer, lastFocus, activeProject = null, wirdSection = 'mushaf';
 let videoObserver, videoInView = false, videoWanted = false;
-let duoObserver, duoTimer;
+let dialogDuoController, heroDuoController, heroVideoObserver, heroVideoInView = false;
+const duoStates = new WeakMap();
 const tr = (ar, en) => lang === 'ar' ? ar : en;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const img = (name, alt, cls = '', eager = false) => `<img class="${cls}" src="assets/images/${name}.webp" alt="${esc(alt)}" loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
 function duo(screen = 'wird-reading', eager = false) { return `<div class="duo">${img('duo-frame','', 'duo-frame',eager)}${img(screen,tr('وِرد على شاشة iPhone Duo','Wird on iPhone Duo'),'duo-screen',eager)}</div>`; }
-function duoShowcase(){return `<div class="duo-unfold-scene" data-duo-showcase data-open="false"><div class="duo-unfold-world"><div class="duo-unfold-fixed" aria-hidden="true"><div class="duo-unfold-front">${duo('wird-mushaf-open',true)}</div></div><div class="duo-unfold-leaf" aria-hidden="true"><div class="duo-unfold-front">${duo('wird-mushaf-open',true)}</div><div class="duo-unfold-back"><div class="duo-closed">${img('wird-mushaf-closed','','duo-closed-screen',true)}${img('duo-closed-frame','','duo-closed-chrome',true)}</div></div></div><div class="duo-live"><div class="duo">${img('duo-frame','','duo-frame',true)}<video class="duo-screen" data-showcase-video muted loop playsinline preload="metadata" poster="assets/images/wird-mushaf-open.webp" aria-label="${tr('عرض المصحف في وِرد على آيفون دو','Wird Mushaf on iPhone Duo')}"><source src="assets/videos/wird-mushaf.mp4" type="video/mp4"></video></div></div></div></div>`;}
+function duoShowcase(prefix = 'wird-mushaf', hero = false){return `<div class="duo-unfold-scene" data-duo-showcase data-open="false"><div class="duo-unfold-world"><div class="duo-unfold-fixed" aria-hidden="true"><div class="duo-unfold-front">${duo(prefix+'-open',true)}</div></div><div class="duo-unfold-leaf" aria-hidden="true"><div class="duo-unfold-front">${duo(prefix+'-open',true)}</div><div class="duo-unfold-back"><div class="duo-closed">${img(prefix+'-closed','','duo-closed-screen',true)}${img('duo-closed-frame','','duo-closed-chrome',true)}</div></div></div><div class="duo-live"><div class="duo">${img('duo-frame','','duo-frame',true)}<video class="duo-screen" ${hero?'data-hero-video':'data-showcase-video'} muted loop playsinline preload="metadata" poster="assets/images/${prefix}-open.webp" aria-label="${tr('عرض المصحف في وِرد على آيفون دو','Wird Mushaf on iPhone Duo')}"><source src="assets/videos/${prefix}.mp4" type="video/mp4"></video></div></div></div></div>`;}
 function phone(screen) { return `<div class="phone"><div class="phone-screen">${screen}</div>${img('iphone-frame','','phone-chrome')}<span class="island" aria-hidden="true"></span></div>`; }
 function iphone18(screen, alt, clip = '') {
  const media=clip?`<video class="iphone18-screen" data-showcase-video muted loop playsinline preload="metadata" poster="assets/images/${screen}.webp" aria-label="${esc(alt)}"><source src="assets/videos/${clip}.mp4" type="video/mp4"></video>`:img(screen,alt,'iphone18-screen');
@@ -33,6 +34,7 @@ function wakeScreen(interactive = false) {
 function toggle(id,label,interactive){return interactive?`<button class="toggle" role="switch" aria-checked="true" aria-label="${label}" data-alarm="${id}"></button>`:`<span class="toggle" aria-hidden="true" aria-checked="true"></span>`;}
 function projectLink(p){return `<a href="#project-${p.id}" class="text-link" aria-label="${content[lang].openProject}: ${p.name}">${content[lang].openProject}<span aria-hidden="true">↗</span></a>`;}
 function render() {
+  stopHeroVideo();
   const t=content[lang], [w,b,c]=t.projects;
   document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';
   document.title=`${t.name} — UX/UI`;
@@ -47,7 +49,7 @@ function render() {
   $('#main').innerHTML=`
     <section class="hero" id="top" aria-labelledby="hero-title">
     <h1 id="hero-title"><span>${t.heroLine1}</span><span class="soft">${t.heroLine2}</span></h1><p class="hero-intro">${t.heroIntro}</p><a class="hero-cta" href="#project-wird">${tr('اكتشف وِرد','Explore Wird')} <span aria-hidden="true">↗</span></a>
-    <div class="hero-stage"><div class="fold-device" aria-label="${tr('وِرد على آيفون دو','Wird on iPhone Duo')}"><div class="fold-half fold-left">${duo('wird-reading',true)}</div><div class="fold-half fold-right" aria-hidden="true">${duo('wird-reading',true)}</div></div></div>
+    <div class="hero-stage">${duoShowcase('wird-mushaf-light',true)}</div>
     <div class="hero-label"><span><strong>${w.name}</strong> &nbsp; / &nbsp; ${tr('القرآن، بمساحة أوسع.','More room for the Quran.')}</span><button class="motion-control" id="motion-control" aria-pressed="${paused}"><span aria-hidden="true">${paused?'▷':'Ⅱ'}</span>${paused?tr('تشغيل الحركة','Enable motion'):tr('إيقاف الحركة','Pause motion')}</button><span dir="ltr">iPhone Duo</span></div></section>
     <section class="section" id="work" aria-labelledby="work-title"><div class="section-heading reveal"><h2 id="work-title">${t.selectedWork}</h2><span class="index">01 — 03</span></div>
     <article class="project-wird reveal"><div class="project-info"><span class="project-kicker">01 / ${w.category}</span><h3>${w.name}</h3><p>${w.tagline}</p>${wirdSectionLinks()}${projectLink(w)}</div><div class="wird-card-art">${duo('wird-home')}</div></article>
@@ -55,7 +57,7 @@ function render() {
     <article class="project-card creative-card reveal"><div class="project-info"><span class="project-kicker">03 / ${c.category}</span><h3>App Store Creative</h3><p>${c.tagline}</p>${projectLink(c)}</div><div class="card-art">${phone(img('creative-studio',tr('واجهة تطبيق App Store Creative الأصلية','Actual App Store Creative interface')))}</div></article></div></section>
     <section class="section about" id="about" aria-labelledby="about-title"><div class="about-layout reveal"><h2 id="about-title">${t.aboutTitle}</h2><div><p class="about-lead">${t.aboutLine}</p><p class="credentials"><span class="credential-mark" aria-hidden="true">✓</span>${t.certification}</p><div class="careers"><article class="career"><img src="assets/images/boubyan.svg" class="bank-logo" alt="${tr('بنك بوبيان','Boubyan Bank')}" width="114" height="57" loading="lazy"><p>${tr('مدير تصميم UX/UI','UX/UI Design Manager')}</p><small>${tr('بوبيان · حاليًا','Boubyan · Current')}<br>${tr('٢٠١٩–حتى اليوم','2019–Present')}</small></article><article class="career"><img src="assets/images/warba.svg" class="bank-logo" alt="${tr('بنك وربة','Warba Bank')}" width="114" height="57" loading="lazy"><p>${tr('التسويق الرقمي والاستراتيجية','Digital Marketing & Strategy')}</p><small>${tr('وربة · ٢٠١٦–٢٠١٩','Warba · 2016–2019')}</small></article></div></div></div></section>
     <section class="contact reveal" id="contact"><div class="eyebrow">${tr('عندك فكرة؟','Have something in mind?')}</div><h2>${t.contactTitle}</h2><div class="contact-links"><a href="mailto:alkwsh@gmail.com" dir="ltr">alkwsh@gmail.com ↗</a><a href="https://kw.linkedin.com/in/abdulrahman-al-wasmi-uxc-574a7b142" target="_blank" rel="noopener noreferrer" dir="ltr">LinkedIn ↗</a></div></section>`;
-  observe();$('#motion-control').addEventListener('click',()=>{paused=!paused;document.body.classList.toggle('motion-paused',paused);$('#motion-control').ariaPressed=String(paused);$('#motion-control').innerHTML=`<span aria-hidden="true">${paused?'▷':'Ⅱ'}</span>${paused?tr('تشغيل الحركة','Enable motion'):tr('إيقاف الحركة','Pause motion')}`;});
+  observe();bindHeroVideo();$('#motion-control').addEventListener('click',()=>{paused=!paused;document.body.classList.toggle('motion-paused',paused);$('#motion-control').ariaPressed=String(paused);$('#motion-control').innerHTML=`<span aria-hidden="true">${paused?'▷':'Ⅱ'}</span>${paused?tr('تشغيل الحركة','Enable motion'):tr('إيقاف الحركة','Pause motion')}`;if(paused){const scene=$('[data-duo-showcase]',$('.hero-stage'));if(scene)finishDuoOpening(scene);}syncHeroVideo();});
 }
 function observe(){observer?.disconnect();if(!('IntersectionObserver' in window)){document.querySelectorAll('.reveal').forEach(e=>e.classList.add('visible'));return;}observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target);}}),{threshold:.08});document.querySelectorAll('.reveal').forEach(e=>observer.observe(e));}
 function features(p){return `<section class="feature-area"><h2>${content[lang].featuresTitle}</h2><div class="features">${p.features.map((f,i)=>`<article class="feature"><span class="feature-number">0${i+1}</span><div><h3>${f.title}</h3><p>${f.body}</p></div></article>`).join('')}</div></section>`;}
@@ -67,7 +69,7 @@ function openProject(id, section = 'mushaf'){
  const visual=id==='wird'?screenTour():id==='creative'?`<div class="case-creative-media">${img('creative-home',tr('مساحة العمل الأصلية في التطبيق','Original app workspace'),'creative-home')}${phone(img('creative-studio',tr('استوديو الموكاب داخل التطبيق','Device mockup studio in the app')))}</div>`:wakeDemo();
  const whyTitle=id==='wird'?tr('لماذا صنعنا وِرد؟','Why we made Wird'):t.whyTitle;
  $('#project-content').innerHTML=`<article class="case case-${id}"><header class="case-header"><div class="eyebrow">${p.category} · UX/UI</div><h1 id="project-title">${p.name}</h1><p class="tagline">${p.tagline}</p><p class="summary">${p.summary}</p></header>${visual}${id==='wird'?`<section class="why"><h2>${whyTitle}</h2><p>${p.why}</p></section>`:''}${id==='wird'?'':features(p)}<div class="next-project"><a href="#project-${id==='wird'?'wakebear':id==='wakebear'?'creative':'wird'}">${tr('المشروع التالي','Next project')} ↗</a></div></article>`;
- if(!dialog.open)dialog.showModal();document.body.style.overflow='hidden';dialog.scrollTop=0;$('#close-dialog').focus({preventScroll:true});
+ if(!dialog.open)dialog.showModal();syncHeroVideo();document.body.style.overflow='hidden';dialog.scrollTop=0;$('#close-dialog').focus({preventScroll:true});
  if(id==='wakebear')bindDemo();if(id==='wird')bindTour();
 }
 function sectionPanel(id){
@@ -86,16 +88,19 @@ function selectWirdSection(id){
 }
 function bindTour(){const tabs=[...dialog.querySelectorAll('[data-screen]')];const select=b=>{if(wirdSection===b.dataset.screen)return;location.hash='project-wird/'+b.dataset.screen;};tabs.forEach((b,i)=>{b.addEventListener('click',()=>select(b));b.addEventListener('keydown',e=>{let n;if(e.key==='ArrowRight')n=(i+(lang==='ar'?-1:1)+tabs.length)%tabs.length;else if(e.key==='ArrowLeft')n=(i+(lang==='ar'?1:-1)+tabs.length)%tabs.length;else if(e.key==='Home')n=0;else if(e.key==='End')n=tabs.length-1;else return;e.preventDefault();tabs[n].focus();select(tabs[n]);});});bindShowcaseVideo();}
 function syncShowcaseVideo(){const video=$('[data-showcase-video]',dialog),scene=$('[data-duo-showcase]',dialog);if(!video)return;if(dialog.open&&videoInView&&videoWanted&&!document.hidden&&(!scene||scene.dataset.open==='true'))video.play().catch(()=>{});else video.pause();}
-function stopShowcaseVideo(){videoObserver?.disconnect();duoObserver?.disconnect();clearTimeout(duoTimer);videoInView=false;videoWanted=false;$('[data-showcase-video]',dialog)?.pause();}
-function finishDuoOpening(scene){clearTimeout(duoTimer);scene.classList.remove('is-opening');scene.classList.add('is-open');scene.dataset.open='true';syncShowcaseVideo();}
-function startDuoOpening(scene){if(motionQuery.matches||paused){finishDuoOpening(scene);return;}scene.classList.add('is-opening');duoTimer=setTimeout(()=>{if(scene.isConnected)finishDuoOpening(scene);},1750);}
-function bindDuoOpening(){
- const scene=$('[data-duo-showcase]',dialog);if(!scene)return;
- const replay=$('[data-duo-replay]',dialog);
- replay.addEventListener('click',()=>{clearTimeout(duoTimer);const video=$('video',scene);video.pause();video.currentTime=0;videoWanted=true;scene.dataset.open='false';scene.classList.remove('is-open','is-opening');requestAnimationFrame(()=>requestAnimationFrame(()=>{if(scene.isConnected)startDuoOpening(scene);}));});
- if(motionQuery.matches||paused){finishDuoOpening(scene);return;}
- if('IntersectionObserver' in window){duoObserver=new IntersectionObserver(entries=>{if(entries[0].isIntersecting){duoObserver.disconnect();startDuoOpening(scene);}},{threshold:.2});duoObserver.observe(scene);}else startDuoOpening(scene);
+function stopShowcaseVideo(){videoObserver?.disconnect();dialogDuoController?.destroy();dialogDuoController=null;videoInView=false;videoWanted=false;$('[data-showcase-video]',dialog)?.pause();}
+function finishDuoOpening(scene){const state=duoStates.get(scene);clearTimeout(state?.timer);scene.classList.remove('is-opening');scene.classList.add('is-open');scene.dataset.open='true';state?.onFinish();}
+function startDuoOpening(scene){const state=duoStates.get(scene);if(!state)return;if(motionQuery.matches||paused){finishDuoOpening(scene);return;}scene.classList.add('is-opening');state.timer=setTimeout(()=>{if(scene.isConnected)finishDuoOpening(scene);},1750);}
+function bindDuoOpening(scene,onFinish){
+ if(!scene)return;
+ const state={onFinish,timer:null,observer:null};duoStates.set(scene,state);
+ if(motionQuery.matches||paused)finishDuoOpening(scene);
+ else if('IntersectionObserver' in window){state.observer=new IntersectionObserver(entries=>{if(entries[0].isIntersecting){state.observer.disconnect();startDuoOpening(scene);}},{threshold:.2});state.observer.observe(scene);}else startDuoOpening(scene);
+ return {destroy(){state.observer?.disconnect();clearTimeout(state.timer);duoStates.delete(scene);}};
 }
+function syncHeroVideo(){const video=$('[data-hero-video]'),scene=$('.hero-stage [data-duo-showcase]');if(!video)return;if(heroVideoInView&&!dialog.open&&!paused&&!motionQuery.matches&&!document.hidden&&scene?.dataset.open==='true')video.play().catch(()=>{});else video.pause();}
+function stopHeroVideo(){heroVideoObserver?.disconnect();heroDuoController?.destroy();heroDuoController=null;heroVideoInView=false;$('[data-hero-video]')?.pause();}
+function bindHeroVideo(){const video=$('[data-hero-video]'),scene=$('.hero-stage [data-duo-showcase]');if(!video)return;video.muted=true;heroDuoController=bindDuoOpening(scene,syncHeroVideo);if('IntersectionObserver' in window){heroVideoObserver=new IntersectionObserver(entries=>{heroVideoInView=entries[0].isIntersecting;syncHeroVideo();},{threshold:.1});heroVideoObserver.observe(video);}else{heroVideoInView=true;syncHeroVideo();}}
 function bindShowcaseVideo(){
  const video=$('[data-showcase-video]',dialog),button=$('[data-video-toggle]',dialog),sound=$('[data-video-sound]',dialog);if(!video)return;
  video.muted=true;videoWanted=!paused&&!motionQuery.matches;
@@ -104,11 +109,12 @@ function bindShowcaseVideo(){
  button.addEventListener('click',()=>{videoWanted=video.paused;const scene=$('[data-duo-showcase]',dialog);if(videoWanted&&scene&&scene.dataset.open!=='true')finishDuoOpening(scene);syncShowcaseVideo();});
  sound?.addEventListener('click',()=>{video.muted=!video.muted;sound.ariaPressed=String(!video.muted);sound.textContent=video.muted?tr('تشغيل الصوت','Sound on'):tr('كتم الصوت','Mute');if(!video.muted){videoWanted=true;syncShowcaseVideo();}});
  if('IntersectionObserver' in window){videoObserver=new IntersectionObserver(entries=>{videoInView=entries[0].isIntersecting;syncShowcaseVideo();},{threshold:.1});videoObserver.observe(video);}else{videoInView=true;syncShowcaseVideo();}
- bindDuoOpening();
+ const scene=$('[data-duo-showcase]',dialog);dialogDuoController=bindDuoOpening(scene,syncShowcaseVideo);
+ $('[data-duo-replay]',dialog)?.addEventListener('click',()=>{const state=duoStates.get(scene);clearTimeout(state?.timer);video.pause();video.currentTime=0;videoWanted=true;scene.dataset.open='false';scene.classList.remove('is-open','is-opening');requestAnimationFrame(()=>requestAnimationFrame(()=>{if(scene.isConnected&&duoStates.has(scene))startDuoOpening(scene);}));});
 }
 function wakeDemo(){return `<section class="demo-area"><div class="demo-controls"><h2>${tr('جرّب الفكرة.','Try the idea.')}</h2><p>${tr('سمّ المجموعة. غيّر النغمة. أوقفها كلها بمفتاح واحد.','Name the group. Pick a sound. Switch them all off together.')}</p><label for="group-input">${tr('اسم المجموعة','Group name')}</label><input id="group-input" value="${tr('الدوام','Workday')}" maxlength="24" autocomplete="off"><label for="sound-select">${tr('نغمة منبّه 6:30','Sound for the 6:30 alarm')}</label><select id="sound-select"><option value="breeze">${tr('نسيم','Breeze')}</option><option value="piano">${tr('بيانو','Piano')}</option><option value="sunrise">${tr('شروق','Sunrise')}</option></select><p class="demo-caption">${tr('عرض تفاعلي للفكرة؛ لا يضبط منبّهًا على جهازك.','An interactive concept; it does not set an alarm on your device.')}</p><div class="demo-feedback" aria-live="polite"></div></div>${phone(wakeScreen(true))}</section>`;}
 function bindDemo(){const ui=$('.demo-area .wake-ui');$('#group-input').addEventListener('input',e=>$('.group-name',ui).textContent=e.target.value.trim()||tr('مجموعتي','My group'));$('#sound-select').addEventListener('change',e=>{const label=e.target.selectedOptions[0].textContent;$('[data-row="0"]',ui).textContent=' · '+label;$('.demo-feedback').textContent=tr('نغمة 6:30: ','6:30 sound: ')+label;});dialog.querySelectorAll('[data-alarm]').forEach(b=>b.addEventListener('click',()=>{const enabled=b.ariaChecked!=='true';b.ariaChecked=String(enabled);if(b.dataset.alarm==='group'){dialog.querySelectorAll('[data-alarm]').forEach(s=>s.ariaChecked=String(enabled));ui.classList.toggle('off',!enabled);$('.demo-feedback').textContent=enabled?tr('كل المنبّهات مفعّلة','All alarms enabled'):tr('كل المنبّهات متوقفة','All alarms paused');}else{const any=[...dialog.querySelectorAll('[data-alarm]:not([data-alarm="group"])')].some(x=>x.ariaChecked==='true');$('[data-alarm="group"]').ariaChecked=String(any);ui.classList.toggle('off',!any);}}));}
-function closeProject(){stopShowcaseVideo();const wasOpen=dialog.open;if(wasOpen)dialog.close();activeProject=null;document.body.style.overflow='';if(wasOpen){lastFocus?.focus({preventScroll:true});lastFocus=null;}}
+function closeProject(){stopShowcaseVideo();const wasOpen=dialog.open;if(wasOpen)dialog.close();syncHeroVideo();activeProject=null;document.body.style.overflow='';if(wasOpen){lastFocus?.focus({preventScroll:true});lastFocus=null;}}
 function route(){const [id,section='mushaf']=location.hash.replace('#project-','').split('/');if(location.hash.startsWith('#project-')&&content[lang].projects.some(p=>p.id===id)){if(id==='wird'&&activeProject==='wird'&&dialog.open)selectWirdSection(section);else openProject(id,section);}else closeProject();}
 $('#close-dialog').addEventListener('click',()=>{history.replaceState(null,'',location.pathname+location.search+'#work');closeProject();});
 dialog.addEventListener('cancel',e=>{e.preventDefault();$('#close-dialog').click();});
@@ -116,7 +122,6 @@ dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoun
 $('#language').addEventListener('click',()=>{lang=lang==='ar'?'en':'ar';try{localStorage.setItem('portfolio-language',lang);}catch{}render();if(activeProject)openProject(activeProject,wirdSection);});
 window.addEventListener('hashchange',route);
 document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#project-"]');if(a&&location.hash===a.getAttribute('href')){e.preventDefault();route();}});
-window.addEventListener('scroll',()=>{if(scrollFrame||paused||motionQuery.matches||dialog.open)return;scrollFrame=requestAnimationFrame(()=>{const device=$('.fold-device');if(device&&window.scrollY<1000){const p=Math.min(window.scrollY/800,1);device.style.transform=`translateY(${p*12}px) rotateX(${p*5}deg)`;}scrollFrame=0;});},{passive:true});
-document.addEventListener('visibilitychange',syncShowcaseVideo);
-motionQuery.addEventListener('change',()=>{if(motionQuery.matches){if($('.fold-device'))$('.fold-device').style.transform='none';videoWanted=false;const scene=$('[data-duo-showcase]',dialog);if(scene)finishDuoOpening(scene);syncShowcaseVideo();}});
+document.addEventListener('visibilitychange',()=>{syncShowcaseVideo();syncHeroVideo();});
+motionQuery.addEventListener('change',()=>{if(motionQuery.matches){videoWanted=false;document.querySelectorAll('[data-duo-showcase]').forEach(finishDuoOpening);syncShowcaseVideo();}syncHeroVideo();});
 render();route();
