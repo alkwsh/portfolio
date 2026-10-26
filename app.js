@@ -8,6 +8,7 @@ const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
 let paused = false, observer, lastFocus, activeProject = null, wirdSection = 'mushaf';
 let videoObserver, videoInView = false, videoWanted = false;
 let dialogDuoController, heroDuoController, heroVideoObserver, heroVideoInView = false;
+let sheetClosing = null;
 const duoStates = new WeakMap();
 const tr = (ar, en) => lang === 'ar' ? ar : en;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -75,6 +76,7 @@ function observe(){observer?.disconnect();if(!('IntersectionObserver' in window)
 function features(p){return `<section class="feature-area"><h2>${content[lang].featuresTitle}</h2><div class="features">${p.features.map((f,i)=>`<article class="feature"><span class="feature-number">0${i+1}</span><div><h3>${f.title}</h3><p>${f.body}</p></div></article>`).join('')}</div></section>`;}
 function openProject(id, section = 'mushaf'){
  const t=content[lang],p=t.projects.find(p=>p.id===id);if(!p)return;
+ cancelProjectClose();
  stopShowcaseVideo();
  if(!dialog.open)lastFocus=document.activeElement;
  activeProject=id;if(id==='wird')wirdSection=wirdSections().some(s=>s.id===section)?section:'mushaf';$('#dialog-name').innerHTML=appBadge(p.id,'dialog-app-badge')+`<span>${esc(p.name)}</span>`;
@@ -99,7 +101,7 @@ function selectWirdSection(id){
  panel.setAttribute('aria-labelledby','tab-'+id);panel.dataset.section=id;panel.innerHTML=sectionPanel(id);panel.classList.remove('changing');requestAnimationFrame(()=>panel.classList.add('changing'));bindShowcaseVideo();
 }
 function bindTour(){const tabs=[...dialog.querySelectorAll('[data-screen]')];const select=b=>{if(wirdSection===b.dataset.screen)return;location.hash='project-wird/'+b.dataset.screen;};tabs.forEach((b,i)=>{b.addEventListener('click',()=>select(b));b.addEventListener('keydown',e=>{let n;if(e.key==='ArrowRight')n=(i+(lang==='ar'?-1:1)+tabs.length)%tabs.length;else if(e.key==='ArrowLeft')n=(i+(lang==='ar'?1:-1)+tabs.length)%tabs.length;else if(e.key==='Home')n=0;else if(e.key==='End')n=tabs.length-1;else return;e.preventDefault();tabs[n].focus();select(tabs[n]);});});bindShowcaseVideo();}
-function syncShowcaseVideo(){const video=$('[data-showcase-video]',dialog),scene=$('[data-duo-showcase]',dialog);if(!video)return;if(dialog.open&&videoInView&&videoWanted&&!document.hidden&&(!scene||scene.dataset.open==='true'))video.play().catch(()=>{});else video.pause();}
+function syncShowcaseVideo(){const video=$('[data-showcase-video]',dialog),scene=$('[data-duo-showcase]',dialog);if(!video)return;if(dialog.open&&!sheetClosing&&videoInView&&videoWanted&&!document.hidden&&(!scene||scene.dataset.open==='true'))video.play().catch(()=>{});else video.pause();}
 function stopShowcaseVideo(){videoObserver?.disconnect();dialogDuoController?.destroy();dialogDuoController=null;videoInView=false;videoWanted=false;$('[data-showcase-video]',dialog)?.pause();}
 function finishDuoOpening(scene){const state=duoStates.get(scene);clearTimeout(state?.timer);scene.classList.remove('is-opening');scene.classList.add('is-open');scene.dataset.open='true';state?.onFinish();}
 function startDuoOpening(scene){const state=duoStates.get(scene);if(!state)return;if(motionQuery.matches||paused){finishDuoOpening(scene);return;}scene.classList.add('is-opening');state.timer=setTimeout(()=>{if(scene.isConnected)finishDuoOpening(scene);},1750);}
@@ -128,8 +130,29 @@ function wakeShowcase(){
  const screens=[['home',tr('مجموعاتك في مكان واحد','Your groups, together')],['group',tr('كل منبّه بوقته واسمه','A time and name for each alarm')],['sounds',tr('نغمة تناسب كل منبّه','A sound for each alarm')]];
  return `<section class="wake-showcase" aria-label="${tr('واجهات WakeBear الأصلية','Original WakeBear screens')}">${screens.map(([screen,caption])=>`<figure>${iphone18('wakebear-'+screen,caption)}<figcaption>${caption}</figcaption></figure>`).join('')}</section>`;
 }
-function closeProject(){stopShowcaseVideo();const wasOpen=dialog.open;if(wasOpen)dialog.close();syncHeroVideo();activeProject=null;document.body.style.overflow='';if(wasOpen){lastFocus?.focus({preventScroll:true});lastFocus=null;}}
-function route(){const [id,section='mushaf']=location.hash.replace('#project-','').split('/');if(location.hash.startsWith('#project-')&&content[lang].projects.some(p=>p.id===id)){if(id==='wird'&&activeProject==='wird'&&dialog.open)selectWirdSection(section);else openProject(id,section);}else closeProject();}
+function cancelProjectClose(){
+ if(!sheetClosing)return;
+ const closing=sheetClosing;sheetClosing=null;clearTimeout(closing.timer);
+ closing.animations.forEach(animation=>animation.reverse());
+}
+function closeProject(){
+ if(!dialog.open||sheetClosing)return;
+ stopShowcaseVideo();
+ const animations=dialog.getAnimations?.().filter(animation=>['project-sheet-in','project-scrim-in'].includes(animation.animationName))||[];
+ const closing={animations,timer:null};sheetClosing=closing;
+ const finish=()=>{
+  if(sheetClosing!==closing)return;
+  sheetClosing=null;clearTimeout(closing.timer);dialog.close();activeProject=null;
+  document.body.style.overflow='';syncHeroVideo();lastFocus?.focus({preventScroll:true});lastFocus=null;
+ };
+ if(paused||motionQuery.matches||!animations.length){finish();return;}
+ // Reverse the live entry animations, including a sheet still on its way up.
+ const remaining=Math.max(...animations.map(animation=>Number(animation.currentTime)||0));
+ animations.forEach(animation=>animation.reverse());
+ closing.timer=setTimeout(finish,remaining+100);
+ Promise.allSettled(animations.map(animation=>animation.finished)).then(finish);
+}
+function route(){const [id,section='mushaf']=location.hash.replace('#project-','').split('/');if(location.hash.startsWith('#project-')&&content[lang].projects.some(p=>p.id===id)){if(id==='wird'&&activeProject==='wird'&&dialog.open&&!sheetClosing)selectWirdSection(section);else openProject(id,section);}else closeProject();}
 $('#close-dialog').addEventListener('click',()=>{history.replaceState(null,'',location.pathname+location.search+'#work');closeProject();});
 dialog.addEventListener('cancel',e=>{e.preventDefault();$('#close-dialog').click();});
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('#close-dialog').click();}});
