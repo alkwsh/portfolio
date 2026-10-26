@@ -67,5 +67,9 @@ html[dir=rtl] .icon-forward{transform:scaleX(-1)}
 html{scrollbar-gutter:stable}
 dialog[open]::backdrop{animation:project-scrim-in .32s ease-out both}
 @keyframes project-scrim-in{from{opacity:0}to{opacity:1}}
+dialog.is-closing::backdrop{animation:project-scrim-out var(--project-close-duration,.64s) cubic-bezier(1,0,.68,.28) both}
+dialog.is-reopening::backdrop{animation:project-scrim-resume .32s ease-out both}
+@keyframes project-scrim-out{from{opacity:var(--project-scrim-from,1)}to{opacity:0}}
+@keyframes project-scrim-resume{from{opacity:var(--project-scrim-from,0)}to{opacity:1}}
 .motion-paused dialog[open],.motion-paused dialog[open]::backdrop{animation:none!important}
 @media(prefers-reduced-motion:reduce){dialog[open],dialog[open]::backdrop{animation:none!important}}

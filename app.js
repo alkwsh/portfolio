@@ -133,21 +133,28 @@ function wakeShowcase(){
 function cancelProjectClose(){
  if(!sheetClosing)return;
  const closing=sheetClosing;sheetClosing=null;clearTimeout(closing.timer);
+ dialog.style.setProperty('--project-scrim-from',getComputedStyle(dialog,'::backdrop').opacity);
+ dialog.classList.remove('is-closing');dialog.classList.add('is-reopening');
  closing.animations.forEach(animation=>animation.reverse());
 }
 function closeProject(){
  if(!dialog.open||sheetClosing)return;
  stopShowcaseVideo();
- const animations=dialog.getAnimations?.().filter(animation=>['project-sheet-in','project-scrim-in'].includes(animation.animationName))||[];
+ const animations=dialog.getAnimations?.().filter(animation=>animation.animationName==='project-sheet-in')||[];
  const closing={animations,timer:null};sheetClosing=closing;
  const finish=()=>{
   if(sheetClosing!==closing)return;
   sheetClosing=null;clearTimeout(closing.timer);dialog.close();activeProject=null;
+  dialog.classList.remove('is-closing','is-reopening');
+  dialog.style.removeProperty('--project-scrim-from');dialog.style.removeProperty('--project-close-duration');
   document.body.style.overflow='';syncHeroVideo();lastFocus?.focus({preventScroll:true});lastFocus=null;
  };
  if(paused||motionQuery.matches||!animations.length){finish();return;}
- // Reverse the live entry animations, including a sheet still on its way up.
+ // Reverse the live entry animation, including a sheet still on its way up.
  const remaining=Math.max(...animations.map(animation=>Number(animation.currentTime)||0));
+ dialog.style.setProperty('--project-scrim-from',getComputedStyle(dialog,'::backdrop').opacity);
+ dialog.style.setProperty('--project-close-duration',remaining+'ms');
+ dialog.classList.remove('is-reopening');dialog.classList.add('is-closing');
  animations.forEach(animation=>animation.reverse());
  closing.timer=setTimeout(finish,remaining+100);
  Promise.allSettled(animations.map(animation=>animation.finished)).then(finish);
