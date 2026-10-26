@@ -38,3 +38,27 @@ html[dir=rtl] .icon-forward{transform:scaleX(-1)}
 .video-controls button{display:inline-flex;align-items:center;justify-content:center;gap:7px}
 .video-controls .icon{width:16px;height:16px}
 @media(max-width:640px){.language{gap:6px;padding-inline:9px}.language .icon{width:14px;height:14px}.hero-label .motion-control{align-items:center;gap:4px}.hero-label .motion-control .icon{width:13px;height:13px}.contact-links a{gap:8px}.contact-links .icon{width:16px;height:16px}#back-top{gap:5px}#back-top .icon{width:13px;height:13px}}
+
+/* Original Icon Composer renders, tilted gently beside each app name. */
+.app-title{display:flex;align-items:center;gap:18px;min-width:0}
+.app-title h1,.app-title h3{min-width:0}
+.app-badge{width:72px;height:72px;flex-shrink:0;object-fit:contain;rotate:-7deg;filter:drop-shadow(0 8px 9px #28332a1c)}
+.app-title-wakebear .app-badge{rotate:6deg}.app-title-creative .app-badge{rotate:-6deg}
+.project-card .app-title{gap:14px}.project-card .app-badge{width:54px;height:54px}
+.project-card .app-title h3{font-size:clamp(24px,2.5vw,32px);line-height:1.2;letter-spacing:-.8px}
+.case-header .app-title{justify-content:center;gap:24px}
+.case-header .app-badge{width:88px;height:88px}
+.case-creative .app-title h1{font-size:clamp(32px,5.8vw,66px)}
+#dialog-name{display:inline-flex;align-items:center;gap:10px}
+.dialog-app-badge{width:28px;height:28px;rotate:-6deg;filter:drop-shadow(0 2px 3px #28332a18)}
+.wake-showcase{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:24px;margin:0 36px;padding:48px 35px 32px;border-radius:24px;background:#f0ece5;overflow:hidden}
+.wake-showcase figure{margin:0;min-width:0;text-align:center}
+.wake-showcase .iphone18{max-width:270px;filter:drop-shadow(0 18px 16px #302a221c)}
+.wake-showcase figure:first-child .iphone18{transform:rotate(-3deg)}
+.wake-showcase figure:last-child .iphone18{transform:rotate(3deg)}
+.wake-showcase figcaption{margin-top:24px;font-size:13px;font-weight:700;color:#6d665a;line-height:1.7}
+@media(max-width:950px){.wake-showcase{gap:18px;padding:35px 22px 26px}.app-badge{width:64px;height:64px}.case-header .app-badge{width:76px;height:76px}}
+@media(max-width:640px){.app-title{gap:14px}.app-badge{width:56px;height:56px}.project-card .app-title{gap:12px}.project-card .app-badge{width:48px;height:48px}.case-header .app-title{gap:16px}.case-header .app-badge{width:62px;height:62px}.case-header .app-title h1{font-size:clamp(34px,10vw,48px)}.case-creative .app-title h1{font-size:32px}.wake-showcase{display:flex;align-items:flex-start;gap:24px;margin:0 14px;padding:30px 25px 24px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:25px;-webkit-overflow-scrolling:touch}.wake-showcase figure{flex:0 0 86%;scroll-snap-align:center}.wake-showcase .iphone18{max-width:265px}.wake-showcase figcaption{font-size:12px;margin-top:20px}}
+
+.hero-app-name{display:inline-flex;align-items:center;gap:6px;vertical-align:middle}.hero-app-badge{width:24px;height:24px;rotate:-7deg;filter:drop-shadow(0 3px 3px #28332a18)}
+@media(max-width:640px){.hero-app-badge{width:20px;height:20px}.hero-app-name{gap:4px}}
