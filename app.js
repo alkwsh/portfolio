@@ -42,7 +42,7 @@ function wirdSections() {
   ];
 }
 function wirdSectionLinks(){return `<div class="wird-section-links" aria-label="${tr('أقسام وِرد','Wird sections')}">${wirdSections().map(s=>`<a href="#project-wird/${s.id}">${s.label}</a>`).join('')}</div>`;}
-function appBadge(id,cls='app-badge'){return img(id==='wird'?'wird-app-icon-black':id+'-app-icon','',cls);}
+function appBadge(id,cls='app-badge'){return img(id==='wird'?'wird-app-icon-native':id+'-app-icon','',cls);}
 function appTitle(p,tag='h3'){return `<div class="app-title app-title-${p.id}">${appBadge(p.id)}<${tag}${tag==='h1'?' id="project-title"':''}>${esc(p.name)}</${tag}></div>`;}
 function projectLink(p){return `<a href="#project-${p.id}" class="text-link" aria-label="${content[lang].openProject}: ${p.name}">${content[lang].openProject}${icon('forward')}</a>`;}
 function render() {
@@ -81,7 +81,7 @@ function openProject(id, section = 'mushaf'){
  const visual=id==='wird'?screenTour():id==='creative'?`<div class="case-creative-media">${img('creative-home',tr('مساحة العمل الأصلية في التطبيق','Original app workspace'),'creative-home')}${phone(img('creative-studio',tr('استوديو الموكاب داخل التطبيق','Device mockup studio in the app')))}</div>`:wakeShowcase();
  const whyTitle=id==='wird'?tr('لماذا صنعنا وِرد؟','Why we made Wird'):t.whyTitle;
  $('#project-content').innerHTML=`<article class="case case-${id}"><header class="case-header"><div class="eyebrow">${p.category} · UX/UI</div>${appTitle(p,'h1')}<p class="tagline">${p.tagline}</p><p class="summary">${p.summary}</p></header>${visual}${id==='wird'?`<section class="why"><h2>${whyTitle}</h2><p>${p.why}</p></section>`:''}${id==='wird'?'':features(p)}<div class="next-project"><a href="#project-${id==='wird'?'wakebear':id==='wakebear'?'creative':'wird'}">${tr('المشروع التالي','Next project')}${icon('forward')}</a></div></article>`;
- if(!dialog.open)dialog.showModal();syncHeroVideo();document.body.style.overflow='hidden';dialog.scrollTop=0;$('#close-dialog').focus({preventScroll:true});
+ document.body.style.overflow='hidden';dialog.scrollTop=0;if(!dialog.open)dialog.showModal();$('#close-dialog').focus({preventScroll:true});syncHeroVideo();
  if(id==='wird')bindTour();
 }
 function sectionPanel(id){
